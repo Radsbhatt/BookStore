@@ -38,10 +38,9 @@ end
 			
 			#converting array to hash
 			hash=Hash[*("name,price,stock,authors".split(',').zip(a).flatten)]
-			p hash
 			Book.new.validation_of_name(hash) 
 			end
-			Book.new.display		
+			##Book.new.display		
 		end
 		#validation of name
 		def validation_of_name(hash1)
@@ -87,7 +86,7 @@ end
 		def insert(hash1)
 		hash = hash1		
 		string=%W{}
-		p hash['authors']
+		hash['authors']
 		$db.query("INSERT INTO books1(name,price,stock,authors) VALUES('#{hash['name']}',#{hash['price']},#{hash['stock']},'#{hash['authors']}')")   
 			
 		end
@@ -109,7 +108,7 @@ end
 		name = String.new
 		name= gets().chomp
 
-		qry=$db.query("SELECT * FROM books1 WHERE name='#{name}' ")
+		qry=$db.query("SELECT * FROM books1 WHERE name LIKE '#{name}%' ")
  
 			qry.each_hash do |h|
 			p h
@@ -119,7 +118,7 @@ end
 
 		#searching records by author name		
 		def search_by_author
-		authorHash2= ""
+		authorHash2=""
 		puts "Enter book author:"
 		name = String.new
 		name= gets().chomp
@@ -149,9 +148,40 @@ end
 				
 			end
 		end	
+		
+		#displaying the main menu
+		def displayMenu
+		puts "Select any one of the options below:"
+		puts 
+		puts "1. Display"
+		puts "2. Search by book name"
+		puts "3. Search by author name"
+		puts "4. Exit"
+		a= gets.to_i 	
+		
+			until a==4					
+			case a
+		
+			when 1
+			Book.new.display
+
+			when 2
+			Book.new.search_by_name
+			
+			when 3
+			Book.new.search_by_author
+			
+			else 
+			puts "You entered wrong value!"
+			end
+			a= gets.to_i
+		end
+		end
 	end
+
 book = Book.new
 book.initial
-book.array_to_hash
-book.search_by_name
-book.search_by_author
+book.displayMenu
+##book.array_to_hash
+
+

@@ -8,8 +8,9 @@ class Author
 	@authorHash= Hash.new
 	@authorArray= Array.new
 
-	$db= Mysql.connect('localhost','root','password','test')
+	
 		def initialize
+		$db= Mysql.connect('localhost','root','password','test')
 		@authorArray= []
 		# authors would be Serialized array of unique_ids from author table
 		query=$db.query("SELECT * FROM authors")

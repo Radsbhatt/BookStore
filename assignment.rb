@@ -1,6 +1,7 @@
 require 'mysql'
 require 'csv'
 require_relative 'Author'
+require_relative 'Accept'
 
 class InvalidAuthorName < RuntimeError
 end
@@ -13,67 +14,144 @@ end
 class InvalidStock < RuntimeError
 end
 
-	#class for accepting values from csv file
-	class Accept 
-	attr_accessor :reader
-		def initialize
+	
+#class for inserting data into Book table
+	class Book 
+		include Authors, Accept_module
+		def initial
+		$obj1= Authors::Author.new
+		$obj2= Accept_module::Accept.new
 		a=%Q{}
 		hash= Hash.new
-		array=Array.new
-		@reader = CSV.open("Books.csv", "r")
-		header = @reader.shift
+		array= Array.new
+		authorHash= Hash.new
+		bookHash= Hash.new
 		end
-	end
-
-	#class for inserting data into Book table
-	class Book < Accept
-		include Authors
-	obj1= Authors::Author.new
-	obj2= Accept.new
-		obj2.reader.each do |row|
-
-		a = [row]*","      #converts array to string
-		a = a.split("\t")   #splits string based on '\t'
-
-		#converting array to hash
-		hash=Hash[*("name,price,stock,authors".split(',').zip(a).flatten)]
-		p hash
-
+	 	
+		
+		def array_to_hash
+		
+			$obj2.reader.each do |row|	
+			p row
+			a = [row]*","      #converts array to string
+			a = a.split("\t")   #splits string based on '\t'
+			
+			#converting array to hash
+			hash=Hash[*("name,price,stock,authors".split(',').zip(a).flatten)]
+			p hash
+			Book.new.validation_of_name(hash) 
+			end
+			Book.new.display		
+		end
 		#validation of name
-		raise NoNameError, "No name Entered" if hash['name'].empty? 
-		obj1.temp=[]
-		obj1.temp= hash["name"].scan(/[^a-zA-Z0-9 ]/)       			
-		raise InvalidName, "Enter a valid name" if (obj1.temp.count !=0)
-
+		def validation_of_name(hash1)
+		hash = hash1
+		
+		raise NoNameError, "No name Entered" if hash['name'].empty?   rescue return
+	
+		$obj1.temp=[]
+		$obj1.temp= hash["name"].scan(/[^a-zA-Z0-9 ]/)       			
+		raise InvalidName, "Enter a valid name" if ($obj1.temp.count !=0)
+		Book.new.validation_of_price(hash)		
+		end
+		
 		#validation of price
-		obj1.temp= hash['price'].scan(/[^0-9 ]/)
-		raise NoPrice, "No price Entered" if hash['price']== '' && obj1.temp.count !=0	 
-
+		def validation_of_price(hash1)
+		hash= hash1
+		$obj1.temp= hash['price'].scan(/[^0-9.]/)
+		raise NoPrice, "No price Entered" if hash['price']== '' || $obj1.temp.count !=0	 rescue return 
+		Book.new.validation_of_stock(hash)		
+		end
+		
 		#validation of stock
+		def validation_of_stock(hash1)
+		hash = hash1
 			if hash['stock']== ""
 			hash['stock'] = 0
 			end
-		obj1.temp= hash["stock"].to_s.scan(/\D/)
-		raise InvalidStock, "Enter valid stock" if obj1.temp.count !=0
-
-		#validation on authors
-		obj1.temp= hash["authors"].scan(/[^a-zA-Z0-9]/)
-		raise InvalidAuthorName, "Enter valid author name" if hash["authors"]== "" && obj1.temp.count !=0 
-		string=%W{}
-
-		#matching author names with that in author table
-		hash["authors"].gsub(/\s/,'').split(",").each {|element| 
-		array =obj1.authorArray.select {|f| f["name"].gsub(/\s/,'').eql?(element) }
-		array=array.reduce Hash.new, :merge
-		string << array["unique_id"]                           
-		str= string.join(",")
-
-		#inserting values into database
-		query=$db.query("INSERT INTO books(name,price,stock,authors) VALUES('#{hash['name']}',#{hash['price']},#{hash['stock']},'#{str}')")
-		}
-
+		$obj1.temp= hash["stock"].to_s.scan(/\D/)
+		raise InvalidStock, "Enter valid stock" if $obj1.temp.count !=0 rescue return 
+		Book.new.validation_of_author(hash)
 		end
-		$db.close
+		
+		#validation on authors
+		def validation_of_author(hash1)
+		hash = hash1
+		$obj1.temp= hash["authors"].scan(/[^a-zA-Z ,]/)
+		raise InvalidAuthorName, "Enter valid author name" if hash["authors"]== "" || $obj1.temp.count !=0  rescue return
+				
+		Book.new.insert(hash)		
+		end
+		
+		#matching author names with that in author table & insert in database
+		def insert(hash1)
+		hash = hash1		
+		string=%W{}
+		p hash['authors']
+		$db.query("INSERT INTO books1(name,price,stock,authors) VALUES('#{hash['name']}',#{hash['price']},#{hash['stock']},'#{hash['authors']}')")   
+			
+		end
+		
+		#Displaying records
+		def display		
+				
+		qry=$db.query("SELECT * FROM books1")
+		 n_rows = qry.num_rows
+			n_rows.times do
+	        	puts qry.fetch_row.join("\t")
+	    		end		
+		
+		end	
+		
+		#searching records by book name		
+		def search_by_name
+		puts "Enter book name:"
+		name = String.new
+		name= gets().chomp
+
+		qry=$db.query("SELECT * FROM books1 WHERE name='#{name}' ")
+ 
+			qry.each_hash do |h|
+			p h
+			end
+		
+		end	
+
+		#searching records by author name		
+		def search_by_author
+		authorHash2= ""
+		puts "Enter book author:"
+		name = String.new
+		name= gets().chomp
+
+		qry=$db.query("SELECT unique_id FROM authors WHERE name='#{name}' ")
+ 		q=$db.query("SELECT * FROM id")
+			q.each_hash do |h1|
+			array = h1['author_id'].split(",")
+			array
+				qry.each_hash do |h|
+							
+				authorHash2 =h['unique_id']
+				
+				
+				end
+								
+				var= h1['unique_id'].to_i
+				  if array.include?("#{authorHash2}")
+					qry2= $db.query("SELECT * FROM books1 WHERE unique_id = #{var}")					
+					
+						qry2.each_hash do |h2|
+						p h2
+						end
+				end
+				
+			
+				
+			end
+		end	
 	end
-
-
+book = Book.new
+book.initial
+book.array_to_hash
+book.search_by_name
+book.search_by_author
